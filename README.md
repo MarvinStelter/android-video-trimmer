@@ -2,7 +2,7 @@
 
 <img src="/screenshots/screenshot_1.png" width="30%"> <img src="/screenshots/screenshot_2.png" width="30%">
 
-Note that this is only the PURE android view. Consider using ffmpeg to actually trim the video.
+Note that this is only the PURE android view. You can use FFMPEG KIT to trim the video: https://github.com/arthenica/ffmpeg-kit
 
 ## Import to your project
 Add this to project level build.gradle
@@ -16,7 +16,7 @@ Add this to project level build.gradle
 
 And then in app level build.gradle
 ```
-  implementation 'com.github.freddyfang:android-video-trimmer:v1.0.0'
+ implementation 'com.github.MarvinStelter:android-video-trimmer:v.1.0.2'
 ```
 
 ## How to Use
