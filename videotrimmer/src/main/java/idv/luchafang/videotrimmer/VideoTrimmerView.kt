@@ -3,18 +3,18 @@ package idv.luchafang.videotrimmer
 import android.content.Context
 import android.graphics.Color
 import android.util.AttributeSet
-import android.widget.LinearLayout.HORIZONTAL
+import android.view.LayoutInflater
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import idv.luchafang.videotrimmer.data.TrimmerDraft
 import idv.luchafang.videotrimmer.slidingwindow.SlidingWindowView
 import idv.luchafang.videotrimmer.tools.dpToPx
 import idv.luchafang.videotrimmer.videoframe.VideoFramesAdaptor
 import idv.luchafang.videotrimmer.videoframe.VideoFramesDecoration
 import idv.luchafang.videotrimmer.videoframe.VideoFramesScrollListener
-import kotlinx.android.synthetic.main.layout_video_trimmer.view.*
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -40,10 +40,16 @@ class VideoTrimmerView @JvmOverloads constructor(
     private var presenter: VideoTrimmerContract.Presenter? = null
     private var adaptor: VideoFramesAdaptor? = null
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* Initialize */
+    private val slidingWindowView: SlidingWindowView
+    private val videoFrameListView: RecyclerView
+
     init {
-        inflate(context, R.layout.layout_video_trimmer, this)
+        val inflater = LayoutInflater.from(context)
+        inflater.inflate(R.layout.layout_video_trimmer, this)
+
+        slidingWindowView = findViewById(R.id.slidingWindowView)
+        videoFrameListView = findViewById(R.id.videoFrameListView)
+
         obtainAttributes(attrs)
         initViews()
     }
@@ -76,15 +82,12 @@ class VideoTrimmerView @JvmOverloads constructor(
     }
 
     private fun initViews() {
-        videoFrameListView.layoutManager = LinearLayoutManager(context, HORIZONTAL, false)
+        videoFrameListView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* Attach / Detach */
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        presenter = obtainVideoTrimmerPresenter()
-            .apply { onViewAttached(this@VideoTrimmerView) }
+        presenter = obtainVideoTrimmerPresenter().apply { onViewAttached(this@VideoTrimmerView) }
         onPresenterCreated()
     }
 
@@ -96,13 +99,13 @@ class VideoTrimmerView @JvmOverloads constructor(
 
     private fun onPresenterCreated() {
         presenter?.let {
-            slidingWindowView.listener = presenter as SlidingWindowView.Listener
+            slidingWindowView.listener = it as SlidingWindowView.Listener
 
             val horizontalMargin = (dpToPx(context, 11f) + barWidth).roundToInt()
             val decoration = VideoFramesDecoration(horizontalMargin, overlayColor)
             val scrollListener = VideoFramesScrollListener(
                 horizontalMargin,
-                presenter as VideoFramesScrollListener.Callback
+                it as VideoFramesScrollListener.Callback
             )
 
             videoFrameListView.addItemDecoration(decoration)
@@ -110,8 +113,6 @@ class VideoTrimmerView @JvmOverloads constructor(
         }
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* Public APIs */
     fun setVideo(video: File): VideoTrimmerView {
         presenter?.setVideo(video)
         return this
@@ -152,8 +153,6 @@ class VideoTrimmerView @JvmOverloads constructor(
         presenter?.restoreTrimmer(draft)
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* VideoTrimmerContract.View */
     override fun getSlidingWindowWidth(): Int {
         val screenWidth = resources.displayMetrics.widthPixels
         val margin = dpToPx(context, 11f)
@@ -179,8 +178,6 @@ class VideoTrimmerView @JvmOverloads constructor(
         layoutManager.scrollToPositionWithOffset(framePosition, frameOffset)
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* Listener */
     interface OnSelectedRangeChangedListener {
         fun onSelectRangeStart()
         fun onSelectRange(startMillis: Long, endMillis: Long)

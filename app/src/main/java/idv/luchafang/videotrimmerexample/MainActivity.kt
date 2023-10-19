@@ -6,8 +6,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -17,19 +19,17 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import idv.luchafang.videotrimmer.VideoTrimmerView
-import kotlinx.android.synthetic.main.activity_main.*
+import idv.luchafang.videotrimmerexample.databinding.ActivityMainBinding
 import java.io.File
 
-
 class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChangedListener {
-
     private val REQ_PICK_VIDEO = 100
     private val REQ_PERMISSION = 200
 
     private val player: SimpleExoPlayer by lazy {
         ExoPlayerFactory.newSimpleInstance(this).also {
             it.repeatMode = SimpleExoPlayer.REPEAT_MODE_ALL
-            playerView.player = it
+            binding.playerView.player = it
         }
     }
 
@@ -38,14 +38,22 @@ class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChange
     }
 
     private var videoPath: String = ""
+    private lateinit var binding: ActivityMainBinding // ViewBinding
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* Activity */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        pickVideoBtn.setOnClickListener {
+        // Request permissions in the onCreate method
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.READ_MEDIA_VIDEO),
+            REQ_PERMISSION
+        )
+
+        binding.pickVideoBtn.setOnClickListener {
             Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
                 .apply {
                     type = "video/*"
@@ -69,12 +77,6 @@ class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChange
 
     override fun onStart() {
         super.onStart()
-
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-            REQ_PERMISSION
-        )
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -85,8 +87,6 @@ class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChange
         }
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* VideoTrimmerView.OnSelectedRangeChangedListener */
     override fun onSelectRangeStart() {
         player.playWhenReady = false
     }
@@ -100,10 +100,8 @@ class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChange
         playVideo(videoPath, startMillis, endMillis)
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* VideoTrimmer */
     private fun displayTrimmerView(path: String) {
-        videoTrimmerView
+        binding.videoTrimmerView
             .setVideo(File(path))
             .setMaxDuration(30_000)
             .setMinDuration(3_000)
@@ -113,8 +111,6 @@ class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChange
             .show()
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* ExoPlayer2 */
     private fun playVideo(path: String, startMillis: Long, endMillis: Long) {
         if (path.isBlank()) return
 
@@ -132,31 +128,27 @@ class MainActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChange
         player.prepare(source)
     }
 
-    /* -------------------------------------------------------------------------------------------*/
-    /* Internal helpers */
     private fun getRealPathFromMediaData(data: Uri?): String {
         data ?: return ""
 
-        var cursor: Cursor? = null
-        try {
-            cursor = contentResolver.query(
-                data,
-                arrayOf(MediaStore.Video.Media.DATA),
-                null, null, null
-            )
+        val cursor = contentResolver.query(
+            data,
+            arrayOf(MediaStore.Video.Media.DATA),
+            null,
+            null,
+            null
+        )
 
-            val col = cursor.getColumnIndex(MediaStore.Video.Media.DATA)
-            cursor.moveToFirst()
-
-            return cursor.getString(col)
-        } finally {
-            cursor?.close()
-        }
+        return cursor?.use {
+            it.moveToFirst()
+            val col = it.getColumnIndex(MediaStore.Video.Media.DATA)
+            it.getString(col)
+        } ?: ""
     }
 
     private fun showDuration(startMillis: Long, endMillis: Long) {
         val duration = (endMillis - startMillis) / 1000L
-        durationView.text = "$duration seconds selected"
+        binding.durationView.text = "$duration seconds selected"
     }
 
     private fun dpToPx(dp: Float): Float {

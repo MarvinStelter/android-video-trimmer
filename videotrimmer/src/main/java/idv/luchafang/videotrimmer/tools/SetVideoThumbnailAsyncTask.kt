@@ -31,7 +31,7 @@ internal class SetVideoThumbnailAsyncTask @JvmOverloads constructor(
 
             val timeUs = if (timeMs == 0L) -1 else timeMs * 1000
             val bitmap = retriever.getFrameAtTime(timeUs)
-            scaleBitmap(bitmap, size)
+            bitmap?.let { scaleBitmap(it, size) }
         } catch (e: Exception) {
             null
         } finally {
@@ -58,8 +58,9 @@ internal class SetVideoThumbnailAsyncTask @JvmOverloads constructor(
     }
 
     private fun fadeOutEndListener(view: ImageView, result: Bitmap): AnimatorListenerAdapter = object : AnimatorListenerAdapter() {
-        override fun onAnimationEnd(animation: Animator?) {
+        override fun onAnimationEnd(animation: Animator) {
             view.setImageBitmap(result)
         }
     }
+
 }
