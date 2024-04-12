@@ -3,7 +3,9 @@ package idv.luchafang.videotrimmer
 import android.content.Context
 import android.graphics.Color
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
+import android.widget.LinearLayout.HORIZONTAL
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -83,11 +85,15 @@ class VideoTrimmerView @JvmOverloads constructor(
 
     private fun initViews() {
         videoFrameListView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+        presenter = obtainVideoTrimmerPresenter()
+            .apply { onViewAttached(this@VideoTrimmerView) }
+
+      //  videoFrameListView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        presenter = obtainVideoTrimmerPresenter().apply { onViewAttached(this@VideoTrimmerView) }
+     
         onPresenterCreated()
     }
 
@@ -144,6 +150,10 @@ class VideoTrimmerView @JvmOverloads constructor(
     }
 
     fun show() {
+        Log.e("VideoTrimmerView", "heeeeeere")
+        if(presenter == null){
+            Log.e("VideoTrimmerView", "presenter is null")
+        }
         presenter?.show()
     }
 
@@ -160,6 +170,7 @@ class VideoTrimmerView @JvmOverloads constructor(
     }
 
     override fun setupAdaptor(video: File, frames: List<Long>, frameWidth: Int) {
+        Log.e("VideoTrimmer", "setupAdaptor: " + video.name + " " + frames.size)
         adaptor = VideoFramesAdaptor(video, frames, frameWidth).also {
             videoFrameListView.adapter = it
         }
